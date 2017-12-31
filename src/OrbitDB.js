@@ -9,7 +9,8 @@ const DocumentStore = require('orbit-db-docstore')
 const Pubsub = require('orbit-db-pubsub')
 const Cache = require('orbit-db-cache')
 const Keystore = require('orbit-db-keystore')
-const AccessController = require('./ipfs-access-controller')
+const IPFSAccessController = require('./ipfs-access-controller')
+const OrbitDBAccessController = require('./orbitdb-access-controller')
 const OrbitDBAddress = require('./orbit-db-address')
 const createDBManifest = require('./db-manifest')
 
@@ -98,7 +99,7 @@ class OrbitDB {
 
     let accessController
     if (options.accessControllerAddress) {
-      accessController = new AccessController(this._ipfs)
+      accessController = new IPFSAccessController(this._ipfs)
       await accessController.load(options.accessControllerAddress)
     }
 
@@ -192,7 +193,7 @@ class OrbitDB {
       throw new Error(`Given database name is an address. Please give only the name of the database!`)
 
     // Create an AccessController
-    const accessController = new AccessController(this._ipfs)
+    const accessController = new IPFSAccessController(this._ipfs)
     /* Disabled temporarily until we do something with the admin keys */
     // Add admins of the database to the access controller
     // if (options && options.admin) {
