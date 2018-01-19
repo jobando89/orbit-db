@@ -13,6 +13,7 @@
   },
   "main": "src/OrbitDB.js",
   "dependencies": {
+    "lodash": "^4.17.4",
     "logplease": "^1.2.14",
     "multihashes": "^0.4.12",
     "orbit-db-cache": "~0.2.1",

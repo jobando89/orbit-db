@@ -1,5 +1,6 @@
 'use strict'
 
+const {get} = require('lodash')
 const path = require('path')
 const EventStore = require('orbit-db-eventstore')
 const FeedStore = require('orbit-db-feedstore')
@@ -14,7 +15,7 @@ const OrbitDBAddress = require('./orbit-db-address')
 const createDBManifest = require('./db-manifest')
 
 const Logger = require('logplease')
-const logger = Logger.create("orbit-db")
+const orbitdbLogger = Logger.create("orbit-db")
 Logger.setLogLevel('NONE')
 
 // Mapping for 'database type' -> Class
@@ -144,22 +145,22 @@ class OrbitDB {
   async _onMessage (address, heads) {
     const store = this.stores[address]
     try {
-      logger.debug(`Received ${heads.length} heads for '${address}':\n`, JSON.stringify(heads.map(e => e.hash), null, 2))
+      orbitdbLogger.debug(`Received ${heads.length} heads for '${address}':\n`, JSON.stringify(heads.map(e => e.hash), null, 2))
       await store.sync(heads)
     } catch (e) {
-      logger.error(e)
+      orbitdbLogger.error(e)
     }
   }
 
   // Callback for when a peer connected to a database
   _onPeerConnected (address, peer, room) {
-    logger.debug(`New peer '${peer}' connected to '${address}'`)
+      orbitdbLogger.debug(`New peer '${peer}' connected to '${address}'`)
     const store = this.stores[address]
     if (store) {
       // Send the newly connected peer our latest heads
       let heads = store._oplog.heads
       if (heads.length > 0) {
-        logger.debug(`Send latest heads of '${address}':\n`, JSON.stringify(heads.map(e => e.hash), null, 2))
+          orbitdbLogger.debug(`Send latest heads of '${address}':\n`, JSON.stringify(heads.map(e => e.hash), null, 2))
         room.sendTo(peer, JSON.stringify(heads))
       }
       store.events.emit('peer', peer)
@@ -168,7 +169,7 @@ class OrbitDB {
 
   // Callback when database was closed
   _onClosed (address) {
-    logger.debug(`Database '${address}' was closed`)
+    orbitdbLogger.debug(`Database '${address}' was closed`)
 
     // Remove the callback from the database
     this.stores[address].events.removeAllListeners('closed')
@@ -191,6 +192,7 @@ class OrbitDB {
     }
   */
   async create (name, type, options = {}) {
+    const logger = get(options,'logger',orbitdbLogger);
     logger.debug(`create()`)
 
     if (!OrbitDB.isValidType(type))
@@ -256,6 +258,7 @@ class OrbitDB {
       }
    */
   async open (address, options = {}) {
+    const logger = get(options,'logger',orbitdbLogger);
     logger.debug(`open()`)
     options = Object.assign({ localOnly: false, create: false }, options)
     logger.debug(`Open database '${address}'`)
@@ -317,7 +320,7 @@ class OrbitDB {
   async _saveDBManifest (directory, dbAddress) {
     const cache = await this._loadCache(directory, dbAddress)
     await cache.set(path.join(dbAddress.toString(), '_manifest'), dbAddress.root)
-    logger.debug(`Saved manifest to IPFS as '${dbAddress.root}'`)
+    orbitdbLogger.debug(`Saved manifest to IPFS as '${dbAddress.root}'`)
   }
 
   async _loadCache (directory, dbAddress) {
@@ -326,7 +329,7 @@ class OrbitDB {
       cache = await Cache.load(directory, dbAddress)
     } catch (e) {
       console.log(e)
-      logger.error("Couldn't load Cache:", e)
+      orbitdbLogger.error("Couldn't load Cache:", e)
     }
 
     return cache
